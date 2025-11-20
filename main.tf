@@ -81,7 +81,7 @@ resource "azurerm_mssql_server" "sql" {
 // SQL DB
 
 resource "azurerm_mssql_database" "db" {
-  name           = "jcal-db"
+  name           = "db-${var.class_name}${var.student_name}${var.environment}${random_integer.deployment_id_suffix.result}"
   server_id      = azurerm_mssql_server.sql.id
   collation      = "SQL_Latin1_General_CP1_CI_AS"
   license_type   = "LicenseIncluded"
