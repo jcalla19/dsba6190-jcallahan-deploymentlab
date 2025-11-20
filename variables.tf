@@ -37,7 +37,7 @@ variable "environment" {
 variable "student_name" {
   description = "Application Name"
   type        = string
-  default     = "jcall"
+  default     = "jcal"
 }
 
 variable "class_name" {
