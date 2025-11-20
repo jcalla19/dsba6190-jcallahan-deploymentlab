@@ -30,6 +30,24 @@ resource "azurerm_resource_group" "rg" {
   tags = local.tags
 }
 
+// Virtual Network
+
+resource "azurerm_virtual_network" "vnet" {
+  name                = "vnet-${var.class_name}-${var.student_name}-${var.environment}-${var.location}-${random_integer.deployment_id_suffix.result}"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+// subnet
+
+resource "azurerm_subnet" "subnet" {
+  name                 = "subnetjcal"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.2.0/24"]
+  service_endpoints    = ["Microsoft.Sql", "Microsoft.Storage"]
+}
 
 // Storage Account
 
@@ -40,5 +58,47 @@ resource "azurerm_storage_account" "storage" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
-  tags = local.tags
+  network_rules {
+    default_action             = "Deny"
+    ip_rules                   = ["100.0.0.1"]
+    virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
+  }
+
+  tags = {
+    environment = "staging"
+  }
+  is_hns_enabled = true
+}
+
+// SQL Server
+
+resource "azurerm_mssql_server" "sql" {
+  name                         = "sql-${var.class_name}${var.student_name}${var.environment}${random_integer.deployment_id_suffix.result}"
+  resource_group_name          = azurerm_resource_group.rg.name
+  location                     = azurerm_resource_group.rg.location
+  version                      = "12.0"
+  administrator_login          = "4dm1n157r470r"
+  administrator_login_password = "4-v3ry-53cr37-p455w0rd"
+}
+
+// SQL DB
+
+resource "azurerm_mssql_database" "db" {
+  name           = "jcal-db"
+  server_id      = azurerm_mssql_server.sql.id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  license_type   = "LicenseIncluded"
+  max_size_gb    = 4
+  read_scale     = true
+  sku_name       = "S0"
+  zone_redundant = true
+  enclave_type   = "VBS"
+
+  tags = {
+    foo = "bar"
+  }
+  # prevent the possibility of accidental data loss
+  lifecycle {
+    prevent_destroy = true
+  }
 }
