@@ -63,7 +63,9 @@ resource "azurerm_storage_account" "storage" {
     ip_rules                   = ["100.0.0.1"]
     virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
   }
-  tags           = local.tags
+
+  tags = local.tags
+
   is_hns_enabled = true
 }
 
@@ -81,18 +83,27 @@ resource "azurerm_mssql_server" "sql" {
 // SQL DB
 
 resource "azurerm_mssql_database" "db" {
-  name           = "db-${var.class_name}${var.student_name}${var.environment}${random_integer.deployment_id_suffix.result}"
-  server_id      = azurerm_mssql_server.sql.id
-  collation      = "SQL_Latin1_General_CP1_CI_AS"
-  license_type   = "LicenseIncluded"
-  max_size_gb    = 1
-  read_scale     = true
-  sku_name       = "S0"
-  zone_redundant = true
-  enclave_type   = "VBS"
+  name         = "db-${var.class_name}${var.student_name}${var.environment}${random_integer.deployment_id_suffix.result}"
+  server_id    = azurerm_mssql_server.sql.id
+  collation    = "SQL_Latin1_General_CP1_CI_AS"
+  license_type = "LicenseIncluded"
+  max_size_gb  = 1
+  sku_name     = "S0"
+  enclave_type = "VBS"
 
   tags = {
     foo = "bar"
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+// vnet rule in resource Group
+
+resource "azurerm_mssql_virtual_network_rule" "vnet-rule" {
+  name      = "sql_vnet_rule"
+  server_id = azurerm_mssql_server.sql.id
+  subnet_id = azurerm_subnet.subnet.id
 }
