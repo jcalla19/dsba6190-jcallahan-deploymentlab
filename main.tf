@@ -63,10 +63,7 @@ resource "azurerm_storage_account" "storage" {
     ip_rules                   = ["100.0.0.1"]
     virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
   }
-
-  tags = {
-    environment = "staging"
-  }
+  tags           = local.tags
   is_hns_enabled = true
 }
 
@@ -97,8 +94,5 @@ resource "azurerm_mssql_database" "db" {
   tags = {
     foo = "bar"
   }
-  # prevent the possibility of accidental data loss
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
